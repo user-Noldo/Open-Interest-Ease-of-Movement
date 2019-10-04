@@ -1,0 +1,176 @@
+//@version=4
+
+//MIT License
+
+//Copyright (c) 2019 user-Noldo
+
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files (the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions:
+
+//The above copyright notice and this permission notice shall be included in all
+//copies or substantial portions of the Software.
+
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
+
+
+study(title="Open Interest Exponential Ease of Movement", shorttitle="OI_EOM_EMA", precision=1)
+src = close
+adaptive        = input(title="Market Type ", options=["FUTURES", "OTHERS"], defval="FUTURES")
+
+bFX = false 
+
+//***** CFTC MARKET CODES *****
+
+// 1 - Futures
+
+sCode1 =
+
+         syminfo.root == "ZB" ? "020601" :  
+         syminfo.root == "ZN" ? "043602" :
+         syminfo.root == "ZQ" ? "045601" :
+         syminfo.root == "ZT" ? "042601" :
+         syminfo.root == "ZS" ? "005602" :
+         syminfo.root == "DC" ? "052641" :
+         syminfo.root == "GF" ? "061641" :
+         syminfo.root == "LBS" ? "058643" :
+         syminfo.root == "QG" ? "023655" :
+         syminfo.root == "QM" ? "067655" :
+         syminfo.root == "SOYBNUSD" ? "005602" :
+	     syminfo.root == "ZM" ? "026603" :  
+	     syminfo.root == "ZL" ? "007601" :  
+	     syminfo.root == "ZC" ? "002602" :  
+	     syminfo.root == "CORNUSD" ? "002602" :
+	     syminfo.root == "ZW" ? "001602" :  
+	     syminfo.root == "WHEATUSD" ? "001602" :
+	     syminfo.root == "KE" ? "001612" :  
+	     syminfo.root == "HE" ? "054642" :  
+	     syminfo.root == "LE" ? "057642" :  
+	     syminfo.root == "GC" ? "088691" :  
+	     syminfo.root == "XAUUSD" ? "088691" :
+	     syminfo.root == "SI" ? "084691" : 
+	     syminfo.root == "XAGUSD" ? "084691" :
+	     syminfo.root == "HG" ? "085692" :
+	     syminfo.root == "XCUUSD" ? "085692" :
+	     syminfo.root == "CL" ? "067651" :  
+	     syminfo.root == "WTICOUSD" ? "067651" : 
+	     syminfo.root == "BCOUSD" ? "06765T" :
+	     syminfo.root == "HO" ? "022651" :  
+	     syminfo.root == "RB" ? "111659" :  
+	     syminfo.root == "NG" ? "023651" :  
+	     syminfo.root == "NATGASUSD" ? "023651" :
+	     syminfo.root == "A6" ? "232741" :  
+	     syminfo.root == "6A" ? "232741" :
+	     syminfo.root == "AUDUSD" ? "232741" :
+	     syminfo.root == "B6" ? "096742" : 
+	     syminfo.root == "6B" ? "096742" : 
+	     syminfo.root == "6C" ? "090741" :
+	     syminfo.root == "CADUSD" ? "090741" :
+	     syminfo.root == "USDCAD" ? "090741" :
+	     syminfo.root == "GBPUSD" ? "096742" :
+	     syminfo.root == "USDGBP" ? "096742" :
+	     syminfo.root == "D6" ? "090741" :  
+	     syminfo.root == "CADUSD" ? "090741" :
+	     syminfo.root == "6Z" ? "122741" :
+	     syminfo.root == "USDZAR" ? "122741" :
+	     syminfo.root == "ZARUSD" ? "122741" :
+	     syminfo.root == "E6" ? "099741" :
+	     syminfo.root == "6E" ? "099741" :
+	     syminfo.root == "EURUSD" ? "099741" :
+	     syminfo.root == "J6" ? "097741" :  
+	     syminfo.root == "6J" ? "097741" : 
+	     syminfo.root == "JPYUSD" ? "097741" :
+	     syminfo.root == "USDJPY" ? "097741" :
+	     syminfo.root == "S6" ? "092741" : 
+	     syminfo.root == "6S" ? "092741" : 
+	     syminfo.root == "USDCHF" ? "092741" : 
+	     syminfo.root == "CHFUSD" ? "092741" :
+	     syminfo.root == "SB" ? "080732" :  
+	     syminfo.root == "SUGARUSD" ? "080732" :
+	     syminfo.root == "KC" ? "083731" :  
+	     syminfo.root == "CC" ? "073732" :  
+	     syminfo.root == "6N" ? "112741" : 
+	     syminfo.root == "6S" ? "092741" : 
+	     syminfo.root == "CT" ? "033661" :  
+	     syminfo.root == "ES" ? "13874A" :  
+	     syminfo.root == "SPX500USD" ? "13874A" : 
+	     syminfo.root == "RTY" ? "239742" : 
+	     syminfo.root == "YM" ? "12460P" :  
+	     syminfo.root == "NQ" ? "209742" : 
+	     syminfo.root == "NAS100USD" ? "209742" :
+	     syminfo.root == "PA" ? "075651" : 
+	     syminfo.root == "XPDUSD" ? "075651" :
+	     syminfo.root == "PL" ? "076651" : 
+	     syminfo.root == "XPTUSD" ? "076651" : 
+	     syminfo.root == "VX" ? "1170E1" :
+	     syminfo.root == "M6" ? "095741" :
+	     syminfo.root == "6M" ? "095741" :
+	     syminfo.root == "USDMXN" ? "095741" :
+	     syminfo.root == "MXNUSD" ? "095741" :
+	     syminfo.root == "BTCUSD" ? "133741" :
+	     syminfo.root == "BTCUSDT" ? "133741" :
+	     syminfo.root == "XBTUSD" ? "133741" :
+         ""
+  
+
+
+// Futures Open Interest 
+  
+quandl_futures_oi = "QUANDL:CFTC/" + sCode1 + "_F_L_ALL"
+
+_oi_futures       = security (quandl_futures_oi + "|0", "W", close)
+
+_vol_others       = volume
+
+
+// Switchable Weiss Wave Open Interest (Futures) / Weiss Wave Volume (Others)
+
+float _switchable = na
+
+if (adaptive=="FUTURES")
+
+    _switchable:=  _oi_futures
+    
+if (adaptive=="OTHERS")
+
+    _switchable:=  volume
+    
+
+
+// Unlocked Exponential Moving Average Function
+
+f_ema(_src, _length)=>
+    _length_adjusted = _length < 1 ? 1 : _length
+    _multiplier = 2 / (_length_adjusted + 1)
+    _return  = 0.00
+    _return := na(_return[1]) ? _src : ((_src - _return[1]) * _multiplier) + _return[1]
+
+
+
+length = input(14, minval=1 , title= "Length EOM")
+
+eom = f_ema( change(hl2) * (high - low) / _switchable, length)
+
+// Conditions : 
+
+
+color_eom()=> eom > 0 ? color.new(color.green,0) : eom <= 0 ? color.new(color.red , 0) : na
+
+
+col_eom = color_eom()
+
+// Plot data
+
+plot(eom, style = plot.style_histogram , linewidth = 4 , color = col_eom , transp = 0)
+
+hline(0, title="Midline", color=color.new(color.black,0) , linewidth = 3)
+
